@@ -99,8 +99,35 @@ class CyberDataGenerator:
                 },
                 "budget_limit": 515200,
                 "alpha": 0.16
+            },
+            "OWASP_Top_10_Web": {
+                "threats": ["Broken Access Control", "Cryptographic Failures", "Injection", "Insecure Design",
+                            "Security Misconfiguration", "Vulnerable Components"],
+                "base_probs": [0.35, 0.20, 0.25, 0.15, 0.30, 0.22],
+                "losses": [1200000, 1500000, 900000, 600000, 400000, 500000],
+                "protection_costs": {
+                    1: {'10%': 25000, '30%': 60000, '80%': 180000},
+                    2: {'10%': 30000, '30%': 85000, '80%': 220000},
+                    3: {'10%': 20000, '30%': 45000, '80%': 130000},
+                    4: {'10%': 35000, '30%': 70000, '80%': 160000},
+                    5: {'10%': 15000, '30%': 30000, '80%': 80000},
+                    6: {'10%': 10000, '30%': 25000, '80%': 75000}
+                },
+                "budget_limit": 650000,
+                "alpha": 0.15
             }
         }
+
+    def load_custom_profile(self, org_name, profile_data):
+        if "protection_costs" in profile_data:
+            profile_data["protection_costs"] = {
+                int(k): v for k, v in profile_data["protection_costs"].items()
+            }
+        self.org_profiles[org_name] = profile_data
+
+    def remove_custom_profile(self, org_name):
+        if org_name in self.org_profiles:
+            del self.org_profiles[org_name]
 
     def generate_history(self, org_type, years=5, noise_level=0.005):
         profile = self.org_profiles[org_type]

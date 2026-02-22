@@ -38,23 +38,19 @@ class ThreatForecaster:
 
         for i in range(n_threats):
             y = np.array([p[i] for p in history_df['probs']])
-
             if self.model_type == 'auto':
                 best_model = None
                 best_r2 = -float('inf')
                 best_name = ''
-
                 for name, model_cls in model_classes.items():
                     temp_model = model_cls()
                     temp_model.fit(X_scaled, y)
                     y_pred = temp_model.predict(X_scaled)
                     r2 = r2_score(y, y_pred)
-
                     if r2 > best_r2:
                         best_r2 = r2
                         best_model = temp_model
                         best_name = name
-
                 self.models.append(best_model)
                 self.best_model_names.append(best_name)
                 residuals = y - best_model.predict(X_scaled)
@@ -95,10 +91,8 @@ class ThreatForecaster:
             y_true = np.array([p[i] for p in history_df['probs']])
             y_pred = model.predict(X_scaled)
             metrics.append({
-                "threat_id": i + 1,
-                "model": self.best_model_names[i],
-                "mse": mean_squared_error(y_true, y_pred),
-                "r2": r2_score(y_true, y_pred),
+                "threat_id": i + 1, "model": self.best_model_names[i],
+                "mse": mean_squared_error(y_true, y_pred), "r2": r2_score(y_true, y_pred),
                 "mae": mean_absolute_error(y_true, y_pred)
             })
         return pd.DataFrame(metrics)
@@ -107,10 +101,8 @@ class ThreatForecaster:
         X = history_df['year'].values.reshape(-1, 1)
         X_scaled = StandardScaler().fit_transform(X)
         model_classes = {
-            'Linear': LinearRegression,
-            'Ridge': lambda: Ridge(alpha=1.0),
-            'Lasso': lambda: Lasso(alpha=0.01),
-            'ElasticNet': lambda: ElasticNet(alpha=0.01),
+            'Linear': LinearRegression, 'Ridge': lambda: Ridge(alpha=1.0),
+            'Lasso': lambda: Lasso(alpha=0.01), 'ElasticNet': lambda: ElasticNet(alpha=0.01),
             'Random Forest': lambda: RandomForestRegressor(n_estimators=50, random_state=42),
             'Gradient Boosting': lambda: GradientBoostingRegressor(n_estimators=50, random_state=42),
             'SVR': lambda: SVR(kernel='rbf', C=1.0, epsilon=0.01),
@@ -124,10 +116,8 @@ class ThreatForecaster:
                 model.fit(X_scaled, y)
                 y_pred = model.predict(X_scaled)
                 results.append({
-                    "Threat ID": i + 1,
-                    "Model": name,
-                    "MSE": mean_squared_error(y, y_pred),
-                    "R2": r2_score(y, y_pred)
+                    "Threat ID": i + 1, "Model": name,
+                    "MSE": mean_squared_error(y, y_pred), "R2": r2_score(y, y_pred)
                 })
         return pd.DataFrame(results)
 
@@ -138,48 +128,25 @@ class ThreatForecaster:
 
         for i in range(len(history_df['probs'].iloc[0])):
             hist_probs = [p[i] for p in history_df['probs']]
-            fig.add_trace(go.Scatter(
-                x=history_df['year'],
-                y=hist_probs,
-                mode='lines+markers',
-                name=f'Загроза {i + 1}',
-                line=dict(width=2)
-            ))
+            fig.add_trace(go.Scatter(x=history_df['year'], y=hist_probs, mode='lines+markers', name=f'Загроза {i + 1}',
+                                     line=dict(width=2)))
 
             forecast_y = []
             lower_bound = []
             upper_bound = []
-
             for year in forecast_x:
                 sims = self.predict_monte_carlo(year, n_simulations)[i]
                 forecast_y.append(np.mean(sims))
                 lower_bound.append(np.percentile(sims, 5))
                 upper_bound.append(np.percentile(sims, 95))
 
-            fig.add_trace(go.Scatter(
-                x=forecast_x,
-                y=forecast_y,
-                mode='lines+markers',
-                name=f'Прогноз {i + 1} ({self.best_model_names[i]})',
-                line=dict(dash='dash', width=2)
-            ))
+            fig.add_trace(go.Scatter(x=forecast_x, y=forecast_y, mode='lines+markers',
+                                     name=f'Прогноз {i + 1} ({self.best_model_names[i]})',
+                                     line=dict(dash='dash', width=2)))
+            fig.add_trace(go.Scatter(x=forecast_x + forecast_x[::-1], y=upper_bound + lower_bound[::-1], fill='toself',
+                                     fillcolor='rgba(0,100,80,0.1)', line=dict(color='rgba(255,255,255,0)'),
+                                     name=f'ДІ 90% {i + 1}', showlegend=False))
 
-            fig.add_trace(go.Scatter(
-                x=forecast_x + forecast_x[::-1],
-                y=upper_bound + lower_bound[::-1],
-                fill='toself',
-                fillcolor='rgba(0,100,80,0.1)',
-                line=dict(color='rgba(255,255,255,0)'),
-                name=f'ДІ 90% {i + 1}',
-                showlegend=False
-            ))
-
-        fig.update_layout(
-            title=f'Прогноз для {org_type} (Monte Carlo, N={n_simulations})',
-            xaxis_title='Рік',
-            yaxis_title='Ймовірність',
-            hovermode='x unified',
-            template='plotly_white',
-            height=600
-        )
+        fig.update_layout(title=f'Прогноз для {org_type} (Monte Carlo, N={n_simulations})', xaxis_title='Рік',
+                          yaxis_title='Ймовірність', hovermode='x unified', template='plotly_white', height=600)
         return fig
