@@ -7,9 +7,6 @@ from data_generator import CyberDataGenerator
 from ml_forecaster import ThreatForecaster
 from optimizer import BudgetOptimizer
 
-# ==========================================
-# КОНФІГУРАЦІЯ СТОРІНКИ
-# ==========================================
 st.set_page_config(
     page_title="CyberBudget AI Optimizer",
     page_icon="🛡️",
@@ -18,9 +15,6 @@ st.set_page_config(
 )
 
 
-# ==========================================
-# ІНІЦІАЛІЗАЦІЯ
-# ==========================================
 @st.cache_resource
 def get_data_generator():
     return CyberDataGenerator()
@@ -34,28 +28,31 @@ def get_optimizer():
 dg = get_data_generator()
 optimizer = get_optimizer()
 
-# ==========================================
-# SIDEBAR
-# ==========================================
 st.sidebar.header("⚙️ Налаштування системи")
 
 org_type = st.sidebar.selectbox(
     "Тип організації",
-    ["E-commerce", "Bank", "Industry", "Healthcare", "Telecom", "University"],
-    help="Оберіть профіль організації згідно зі статтею"
+    ["E-commerce", "Bank", "Industry", "Healthcare", "Telecom", "University"]
 )
 
 use_ml = st.sidebar.checkbox(
     "🤖 Використовувати ML-прогнозування",
-    value=True,
-    help="Інновація: регресійна модель для прогнозу ймовірностей"
+    value=True
 )
 
 model_type = st.sidebar.selectbox(
     "Тип ML-моделі",
-    ["linear", "ridge", "random_forest"],
-    disabled=not use_ml,
-    help="Linear Regression, Ridge або Random Forest"
+    ["auto", "linear", "ridge", "lasso", "elastic_net", "random_forest", "gradient_boosting", "svr", "decision_tree"],
+    disabled=not use_ml
+)
+
+n_simulations = st.sidebar.slider(
+    "Кількість імітацій (Монте-Карло)",
+    min_value=100,
+    max_value=10000,
+    value=1000,
+    step=100,
+    disabled=not use_ml
 )
 
 forecast_years = st.sidebar.slider(
@@ -70,39 +67,20 @@ history_years = st.sidebar.slider(
     "Кількість років історії",
     min_value=3,
     max_value=10,
-    value=5,
-    help="Дані для навчання ML-моделі"
+    value=5
 )
 
 optimization_method = st.sidebar.radio(
     "Метод оптимізації",
-    ["Brute Force (перебір)", "Continuous (scipy)"],
-    help="Перебір - як у статті, Continuous - інновація"
+    ["Brute Force (перебір)", "Continuous (scipy)"]
 )
 
 st.sidebar.markdown("---")
-st.sidebar.info("""
-**Наукова новизна:**
-1. ML-прогнозування ймовірностей
-2. Неперервна оптимізація
-3. Динамічний аналіз ROI
-""")
 
-# ==========================================
-# ГОЛОВНА ЧАСТИНА
-# ==========================================
 st.title("🛡️ Система оптимізації бюджету кібербезпеки з ML-прогнозуванням")
-st.markdown("""
-**Магістерська дисертація:** Розробка методики оптимізації розподілу бюджету на кібербезпеку 
-на основі аналізу статистики загроз для організацій різних типів
-""")
 
-# Отримання профілю
 profile = dg.get_profile(org_type)
 
-# ==========================================
-# TABS
-# ==========================================
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 Інформація",
     "🤖 ML-Прогноз",
@@ -111,9 +89,6 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📑 Звіт"
 ])
 
-# ==========================================
-# TAB 1: ІНФОРМАЦІЯ
-# ==========================================
 with tab1:
     st.header(f"Профіль: {org_type}")
 
@@ -136,7 +111,6 @@ with tab1:
         'Очікуваний ризик': '{:,.0f}'
     }), use_container_width=True)
 
-    # Графік базових ризиків
     fig = px.bar(
         df_threats,
         x="Загроза",
@@ -148,28 +122,26 @@ with tab1:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-# ==========================================
-# TAB 2: ML-ПРОГНОЗ
-# ==========================================
 with tab2:
-    st.header("🤖 Прогнозування загроз за допомогою ML")
+    st.header("🤖 Прогнозування загроз за допомогою ML та Монте-Карло")
 
     if use_ml:
-        # Генерація історії
         history_df = dg.generate_history(org_type, years=history_years)
 
-        # Навчання моделі
         forecaster = ThreatForecaster(model_type=model_type)
         forecaster.train(history_df, len(profile['threats']))
 
-        # Прогноз
         last_year = history_df['year'].max()
-        predicted_probs = forecaster.predict(last_year + 1)
+
+        predicted_sims = forecaster.predict_monte_carlo(last_year + 1, n_simulations)
+        pred_means = [np.mean(sims) for sims in predicted_sims]
+        pred_lows = [np.percentile(sims, 5) for sims in predicted_sims]
+        pred_highs = [np.percentile(sims, 95) for sims in predicted_sims]
 
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader("Метрики моделей")
+            st.subheader("Метрики базових моделей")
             metrics_df = forecaster.get_model_metrics(history_df)
             st.dataframe(metrics_df.style.format({
                 'mse': '{:.6f}',
@@ -178,47 +150,59 @@ with tab2:
             }), use_container_width=True)
 
         with col2:
-            st.subheader("Прогноз на наступний рік")
+            st.subheader(f"Прогноз на рік {last_year + 1} (Монте-Карло)")
             df_forecast = pd.DataFrame({
                 "Загроза": profile['threats'],
-                "Поточна ймовірність": profile['base_probs'],
-                "Прогнозована ймовірність": predicted_probs,
-                "Зміна (%)": ((predicted_probs - profile['base_probs']) /
-                              profile['base_probs'] * 100).round(2)
+                "Поточна йм.": profile['base_probs'],
+                "Прогноз (Mean)": pred_means,
+                "Min (5%)": pred_lows,
+                "Max (95%)": pred_highs
             })
             st.dataframe(df_forecast.style.format({
-                'Поточна ймовірність': '{:.3f}',
-                'Прогнозована ймовірність': '{:.3f}',
-                'Зміна (%)': '{:+.1f}%'
+                'Поточна йм.': '{:.3f}',
+                'Прогноз (Mean)': '{:.3f}',
+                'Min (5%)': '{:.3f}',
+                'Max (95%)': '{:.3f}'
             }), use_container_width=True)
 
-        # Графік прогнозу
-        st.subheader("📈 Візуалізація прогнозу")
-        fig_forecast = forecaster.plot_forecast(history_df, forecast_years, org_type)
+        st.subheader("📈 Візуалізація прогнозу з довірчими інтервалами (90%)")
+        fig_forecast = forecaster.plot_forecast(history_df, forecast_years, org_type, n_simulations)
         st.plotly_chart(fig_forecast, use_container_width=True)
 
-        # Збереження прогнозованих ймовірностей для оптимізації
-        st.session_state['predicted_probs'] = predicted_probs
+        with st.expander("📊 Порівняння всіх регресійних моделей"):
+            comp_df = forecaster.compare_all_models(history_df, len(profile['threats']))
+            st.dataframe(comp_df.style.format({
+                'MSE': '{:.6f}',
+                'R2': '{:.4f}'
+            }), use_container_width=True)
+
+            fig_comp = px.bar(
+                comp_df,
+                x="Threat ID",
+                y="R2",
+                color="Model",
+                barmode="group",
+                title="Порівняння R2 моделей для кожної загрози"
+            )
+            st.plotly_chart(fig_comp, use_container_width=True)
+
+        st.session_state['predicted_probs'] = np.array(pred_means)
         st.session_state['use_ml'] = True
 
     else:
-        st.warning("⚠️ ML-прогнозування вимкнено. Використовуються базові ймовірності.")
+        st.warning("⚠️ ML-прогнозування вимкнено.")
         st.session_state['predicted_probs'] = np.array(profile['base_probs'])
         st.session_state['use_ml'] = False
 
-# ==========================================
-# TAB 3: ОПТИМІЗАЦІЯ
-# ==========================================
 with tab3:
     st.header("🎯 Оптимізація розподілу бюджету")
 
-    # Вибір ймовірностей
     if st.session_state.get('use_ml', False) and 'predicted_probs' in st.session_state:
         probs_to_use = st.session_state['predicted_probs']
-        st.info("🤖 Використовуються **ML-прогнозовані** ймовірності")
+        st.info("🤖 Використовуються ML-прогнозовані ймовірності")
     else:
         probs_to_use = np.array(profile['base_probs'])
-        st.warning("⚠️ Використовуються **базові** ймовірності")
+        st.warning("⚠️ Використовуються базові ймовірності")
 
     losses = np.array(profile['losses'])
     initial_risk = optimizer.calculate_risk(probs_to_use, losses)
@@ -247,7 +231,6 @@ with tab3:
                     col3.metric("Залишковий ризик", f"{best['new_risk']:,.0f} грн")
                     col4.metric("ROI", f"{best['roi']:.2f}:1")
 
-                    # Таблиця розподілу
                     st.subheader("📋 Рекомендований розподіл бюджету")
                     df_distribution = pd.DataFrame({
                         "Загроза": profile['threats'],
@@ -269,7 +252,6 @@ with tab3:
                         'Ймовірність після': '{:.3f}'
                     }), use_container_width=True)
 
-                    # Графік розподілу
                     fig_dist = px.bar(
                         df_distribution,
                         x="Загроза",
@@ -293,7 +275,6 @@ with tab3:
                 col3.metric("Залишковий ризик", f"{result['residual_risk']:,.0f} грн")
                 col4.metric("ROI", f"{result['roi']:.2f}:1")
 
-                # Графік витрат
                 fig_continuous = px.bar(
                     x=profile['threats'],
                     y=result['spending'],
@@ -306,9 +287,6 @@ with tab3:
 
                 st.session_state['continuous_result'] = result
 
-# ==========================================
-# TAB 4: ПОРІВНЯННЯ
-# ==========================================
 with tab4:
     st.header("⚖️ Порівняння методів")
 
@@ -345,7 +323,6 @@ with tab4:
             'ROI': '{:.2f}'
         }), use_container_width=True)
 
-        # Графіки порівняння
         col1, col2 = st.columns(2)
 
         with col1:
@@ -370,45 +347,10 @@ with tab4:
             )
             st.plotly_chart(fig_reduction, use_container_width=True)
 
-# ==========================================
-# TAB 5: ЗВІТ
-# ==========================================
 with tab5:
     st.header("📑 Звіт для дисертації")
 
-    st.markdown("""
-    ### Наукова новизна розробленої системи:
-
-    1. **Інтеграція ML-моделей** для динамічного прогнозування ймовірностей загроз
-       - Лінійна регресія, Ridge, Random Forest
-       - Автоматична оцінка якості моделей (R², MSE, MAE)
-
-    2. **Два методи оптимізації**:
-       - Перебір (класичний підхід зі статті)
-       - Неперервна оптимізація (scipy.optimize) - інновація
-
-    3. **Веб-інтерфейс** для практичного впровадження
-       - Streamlit для швидкого розгортання
-       - Інтерактивні графіки Plotly
-
-    4. **Порівняльний аналіз** для 6 типів організацій
-       - E-commerce, Bank, Industry, Healthcare, Telecom, University
-    """)
-
     if st.button("📥 Експортувати звіт"):
-        st.success("Звіт готовий до експорту! (функціонал можна додати)")
+        st.success("Звіт готовий до експорту!")
 
-    st.markdown("""
-    ---
-    **Використані формули зі статті:**
-    - Формула (1): Ймовірність загрози
-    - Формула (2-3): Розрахунок ризику
-    - Формула (4-5): Ефективність захисту
-    - Формула (6): Допустимі витрати
-    - Формула (7): ROI
-    """)
-
-# ==========================================
-# FOOTER
-# ==========================================
 st.markdown("---")
