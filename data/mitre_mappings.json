@@ -1,0 +1,122 @@
+{
+  "CWE-89": {
+    "technique": "T1190",
+    "tactic": "Initial Access",
+    "name": "Exploit Public-Facing Application",
+    "description": "SQL Injection — exploit public-facing application via crafted input"
+  },
+  "CWE-79": {
+    "technique": "T1059",
+    "tactic": "Execution",
+    "name": "Command and Scripting Interpreter",
+    "description": "Cross-Site Scripting — inject scripts via web input"
+  },
+  "CWE-22": {
+    "technique": "T1083",
+    "tactic": "Discovery",
+    "name": "File and Directory Discovery",
+    "description": "Path Traversal — access files outside intended directory"
+  },
+  "CWE-287": {
+    "technique": "T1078",
+    "tactic": "Initial Access",
+    "name": "Valid Accounts",
+    "description": "Improper Authentication — bypass authentication mechanisms"
+  },
+  "CWE-601": {
+    "technique": "T1566",
+    "tactic": "Initial Access",
+    "name": "Phishing",
+    "description": "Open Redirect — redirect users to malicious sites"
+  },
+  "CWE-918": {
+    "technique": "T1190",
+    "tactic": "Initial Access",
+    "name": "Exploit Public-Facing Application",
+    "description": "Server-Side Request Forgery — make requests from server to internal resources"
+  },
+  "CWE-502": {
+    "technique": "T1059",
+    "tactic": "Execution",
+    "name": "Command and Scripting Interpreter",
+    "description": "Deserialization of Untrusted Data — execute arbitrary code via crafted objects"
+  },
+  "CWE-200": {
+    "technique": "T1005",
+    "tactic": "Collection",
+    "name": "Data from Local System",
+    "description": "Information Exposure — expose sensitive data to unauthorized parties"
+  },
+  "CWE-352": {
+    "technique": "T1566",
+    "tactic": "Initial Access",
+    "name": "Phishing",
+    "description": "Cross-Site Request Forgery — perform unauthorized actions via forged requests"
+  },
+  "CWE-434": {
+    "technique": "T1105",
+    "tactic": "Command and Control",
+    "name": "Ingress Tool Transfer",
+    "description": "Unrestricted File Upload — upload malicious files to server"
+  },
+  "CWE-306": {
+    "technique": "T1190",
+    "tactic": "Initial Access",
+    "name": "Exploit Public-Facing Application",
+    "description": "Missing Authentication for Critical Function — no auth on admin endpoints"
+  },
+  "CWE-798": {
+    "technique": "T1078",
+    "tactic": "Initial Access",
+    "name": "Valid Accounts",
+    "description": "Hard-coded Credentials — default or embedded credentials"
+  },
+  "CWE-693": {
+    "technique": "T1190",
+    "tactic": "Initial Access",
+    "name": "Exploit Public-Facing Application",
+    "description": "Protection Mechanism Failure — missing security headers"
+  },
+  "CWE-829": {
+    "technique": "T1190",
+    "tactic": "Initial Access",
+    "name": "Exploit Public-Facing Application",
+    "description": "Inclusion of Functionality from Untrusted Control Sphere — vulnerable components"
+  },
+  "CWE-20": {
+    "technique": "T1203",
+    "tactic": "Execution",
+    "name": "Exploitation for Client Execution",
+    "description": "Improper Input Validation — process malformed input"
+  },
+  "CWE-269": {
+    "technique": "T1078",
+    "tactic": "Initial Access",
+    "name": "Valid Accounts",
+    "description": "Improper Privilege Management — escalate privileges"
+  },
+  "CWE-311": {
+    "technique": "T1557",
+    "tactic": "Credential Access",
+    "name": "Adversary-in-the-Middle",
+    "description": "Missing Encryption of Sensitive Data — transmit in cleartext"
+  },
+  "CWE-327": {
+    "technique": "T1557",
+    "tactic": "Credential Access",
+    "name": "Adversary-in-the-Middle",
+    "description": "Use of Broken Cryptographic Algorithm — weak or deprecated crypto"
+  },
+  "CWE-330": {
+    "technique": "T1592",
+    "tactic": "Reconnaissance",
+    "name": "Gather Victim Host Information",
+    "description": "Use of Insufficiently Random Values — predictable tokens/sessions"
+  },
+  "CWE-362": {
+    "technique": "T1499",
+    "tactic": "Impact",
+    "name": "Endpoint Denial of Service",
+    "description": "Concurrent Execution Using Shared Resource — race condition"
+  }
+}
